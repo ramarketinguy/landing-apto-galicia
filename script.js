@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ─── Meta Pixel & CAPI Dual Tracking ───
-    const META_TEST_EVENT_CODE = 'TEST79055';
 
     // Generate unique event ID for deduplication between Pixel and CAPI
     const generateEventId = (prefix) => {
@@ -34,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
             const result = await response.json();
-            console.log(`✅ CAPI [${eventName}]:`, result);
         } catch (error) {
             console.warn(`⚠️ CAPI [${eventName}] failed:`, error.message);
         }
@@ -47,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Browser-side Pixel tracking
         if (typeof fbq !== 'undefined') {
             fbq('track', eventName, customData, { eventID: eventId });
-            console.log(`📊 Pixel [${eventName}]:`, eventId);
         }
 
         // 2. Server-side CAPI tracking
