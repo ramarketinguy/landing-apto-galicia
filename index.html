@@ -31,7 +31,13 @@
         }(window, document, 'script',
             'https://connect.facebook.net/en_US/fbevents.js');
         fbq('init', '890295370288342');
-        fbq('track', 'PageView', { content_name: 'Apartamento Galicia y Rondeau' });
+        fbq('track', 'PageView', {}, { eventID: 'pv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) });
+        fbq('track', 'ViewContent', {
+            content_name: 'Apartamento Galicia y Rondeau',
+            content_category: 'Real Estate',
+            value: 115000,
+            currency: 'USD'
+        }, { eventID: 'vc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) });
     </script>
     <!-- End Meta Pixel Code -->
 </head>

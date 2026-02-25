@@ -10,21 +10,75 @@ document.addEventListener('DOMContentLoaded', () => {
         historyEl.setAttribute('data-target', currentYear - 1927);
     }
 
-    // ─── Meta Pixel & CAPI Tracking ───
-    const trackContact = (method) => {
-        // Pixel Tracking
-        if (typeof fbq !== 'undefined') {
-            fbq('track', 'Contact', {
-                content_name: 'Apartamento Galicia y Rondeau',
-                value: 115000,
-                currency: 'USD',
-                method: method
+    // ─── Meta Pixel & CAPI Dual Tracking ───
+    const META_TEST_EVENT_CODE = 'TEST79055';
+
+    // Generate unique event ID for deduplication between Pixel and CAPI
+    const generateEventId = (prefix) => {
+        return prefix + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    };
+
+    // Send event to Conversions API via Vercel serverless proxy
+    const sendCAPI = async (eventName, eventId, customData = {}) => {
+        try {
+            const response = await fetch('/api/capi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event_name: eventName,
+                    event_time: Math.floor(Date.now() / 1000),
+                    event_id: eventId,
+                    event_source_url: window.location.href,
+                    action_source: 'website',
+                    custom_data: customData
+                })
             });
+            const result = await response.json();
+            console.log(`✅ CAPI [${eventName}]:`, result);
+        } catch (error) {
+            console.warn(`⚠️ CAPI [${eventName}] failed:`, error.message);
+        }
+    };
+
+    // Unified tracking: Pixel + CAPI with shared eventID
+    const trackEvent = (eventName, customData = {}, prefix = 'evt') => {
+        const eventId = generateEventId(prefix);
+
+        // 1. Browser-side Pixel tracking
+        if (typeof fbq !== 'undefined') {
+            fbq('track', eventName, customData, { eventID: eventId });
+            console.log(`📊 Pixel [${eventName}]:`, eventId);
         }
 
-        // Conversions API (Vercel Proxy style if available)
-        // Note: For total privacy and bypassing blockers, we'd call a serverless function here
-        console.log('Contacto trackeado:', method);
+        // 2. Server-side CAPI tracking
+        sendCAPI(eventName, eventId, customData);
+    };
+
+    // Track PageView + ViewContent on page load (via CAPI — Pixel already fires in <head>)
+    sendCAPI('PageView', document.querySelector('meta[name="event-pv-id"]')?.content || generateEventId('pv'), {});
+    sendCAPI('ViewContent', generateEventId('vc'), {
+        content_name: 'Apartamento Galicia y Rondeau',
+        content_category: 'Real Estate',
+        value: 115000,
+        currency: 'USD'
+    });
+
+    // Track Contact events on WhatsApp and Phone clicks
+    const trackContact = (method) => {
+        trackEvent('Contact', {
+            content_name: 'Apartamento Galicia y Rondeau',
+            value: 115000,
+            currency: 'USD',
+            method: method
+        }, 'contact');
+
+        // Also track as Lead for broader funnel tracking
+        trackEvent('Lead', {
+            content_name: 'Apartamento Galicia y Rondeau',
+            value: 115000,
+            currency: 'USD',
+            lead_type: method
+        }, 'lead');
     };
 
     // Attach to all WhatsApp buttons
